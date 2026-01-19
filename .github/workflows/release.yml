@@ -45,7 +45,7 @@ jobs:
 
       - name: Build Windows exe
         run: |
-          pyinstaller config_flow.spec
+          pyinstaller docker/config_flow.spec
 
       - name: Get version
         id: version
