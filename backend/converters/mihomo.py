@@ -1122,14 +1122,12 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
         # 基本字段
         base['uuid'] = params.get('uuid', '')
         base['network'] = params.get('type', 'tcp')
+        # encryption 字段（VLESS 默认为 none）
+        base['encryption'] = params.get('encryption', 'none')
 
-        # 加密方式（VLESS 通常是 none）
-        encryption = params.get('encryption', 'none')
-        if encryption and encryption != 'none':
-            base['encryption'] = encryption
-
-        # 处理 security 字段（tls/reality）
+        # 处理 security 字段（tls/reality/none）
         security = params.get('security', 'none')
+        base['security'] = security
 
         if security == 'reality':
             # Reality 模式
