@@ -1,5 +1,5 @@
 """Agent Manager 单例模块"""
-from backend.agents import AgentManager
+from backend.agents.manager import AgentManager
 from backend.common.config import config_data
 
 # 全局 agent_manager 实例

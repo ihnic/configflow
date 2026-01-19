@@ -5,7 +5,7 @@
 import os
 from flask import request, jsonify, send_file
 
-from backend.agents import generate_agent_config
+from backend.agents.config_generator import generate_agent_config
 from backend.agents.version import get_latest_version, has_update
 from backend.converters.mihomo import generate_mihomo_config, get_mihomo_provider_downloads, get_mihomo_ruleset_downloads
 from backend.converters.mosdns import generate_mosdns_config, get_mosdns_ruleset_downloads, get_mosdns_custom_files
