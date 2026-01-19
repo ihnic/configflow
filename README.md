@@ -169,6 +169,19 @@ config-flow/
   <img src="https://img.shields.io/badge/爱发电-赞助支持-ff69b4?style=for-the-badge&logo=heart" alt="爱发电赞助">
 </a>
 
+### 🏆 发电排行榜
+
+感谢以下用户的赞助支持！
+
+<table>
+<tr>
+<td align="center">
+<img src="https://pic1.afdiancdn.com/default/avatar/avatar-purple.png?imageView2/1/w/50/h/50" width="50" height="50" style="border-radius: 50%;" /><br/>
+<sub><b>爱发电用户_740f4</b></sub>
+</td>
+</tr>
+</table>
+
 ---
 
 <div align="center">
