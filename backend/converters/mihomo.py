@@ -1120,47 +1120,70 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
 
     elif node_type == 'vless':
         # 基本字段
-        base['udp'] = params.get('udp', True)
         base['uuid'] = params.get('uuid', '')
-        base['flow'] = params.get('flow', '')
-        base['packet-encoding'] = params.get('packet-encoding', '')
-
-        # 处理 security 字段（tls/reality/none）
-        security = params.get('security', 'none')
-
-        # TLS 相关字段
-        base['tls'] = True if security in ['reality', 'tls'] else False
-        base['servername'] = params.get('sni', '')
-
-        # ALPN
-        alpn = params.get('alpn')
-        if alpn:
-            if isinstance(alpn, str):
-                base['alpn'] = alpn.split(',')
-            else:
-                base['alpn'] = alpn
-        else:
-            base['alpn'] = []
-
-        base['fingerprint'] = params.get('fingerprint', '')
-        base['client-fingerprint'] = params.get('fp', '')
-        base['skip-cert-verify'] = params.get('skip-cert-verify', False)
-
-        # reality-opts（仅 Reality 模式）
-        if security == 'reality':
-            base['reality-opts'] = {
-                'public-key': params.get('pbk', ''),
-                'short-id': params.get('sid', ''),
-                'spider-x': params.get('spx', '')
-            }
-
-        base['encryption'] = params.get('encryption', '')
         base['network'] = params.get('type', 'tcp')
 
-        # smux
-        base['smux'] = {
-            'enabled': params.get('smux', False)
-        }
+        # 加密方式（VLESS 通常是 none）
+        encryption = params.get('encryption', 'none')
+        if encryption and encryption != 'none':
+            base['encryption'] = encryption
+
+        # 处理 security 字段（tls/reality）
+        security = params.get('security', 'none')
+
+        if security == 'reality':
+            # Reality 模式
+            base['tls'] = True
+            base['udp'] = True
+
+            # servername (从 sni 转换)
+            sni = params.get('sni', '')
+            if sni:
+                base['servername'] = sni
+
+            # client-fingerprint (从 fp 转换)
+            fp = params.get('fp', '')
+            if fp:
+                base['client-fingerprint'] = fp
+
+            # reality-opts
+            reality_opts = {}
+            pbk = params.get('pbk', '')
+            if pbk:
+                reality_opts['public-key'] = pbk
+            sid = params.get('sid', '')
+            if sid:
+                reality_opts['short-id'] = sid
+            spx = params.get('spx', '')
+            if spx:
+                reality_opts['spider-x'] = spx
+            if reality_opts:
+                base['reality-opts'] = reality_opts
+
+        elif security == 'tls':
+            # TLS 模式
+            base['tls'] = True
+
+            sni = params.get('sni', '')
+            if sni:
+                base['servername'] = sni
+
+            fp = params.get('fp', '')
+            if fp:
+                base['client-fingerprint'] = fp
+
+            # ALPN
+            alpn = params.get('alpn')
+            if alpn:
+                if isinstance(alpn, str):
+                    base['alpn'] = alpn.split(',')
+                else:
+                    base['alpn'] = alpn
+
+        # 流控参数 (flow)
+        flow = params.get('flow', '')
+        if flow:
+            base['flow'] = flow
 
         # WebSocket 选项
         if params.get('type') == 'ws':
@@ -1173,6 +1196,10 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
             grpc_opts = params.get('grpc-opts', {})
             if grpc_opts:
                 base['grpc-opts'] = grpc_opts
+
+        # UDP 支持
+        if params.get('udp'):
+            base['udp'] = True
 
     elif node_type == 'anytls':
         # anytls 类型节点，将所有 params 参数复制到 base 中
