@@ -1122,12 +1122,9 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
         # 基本字段
         base['uuid'] = params.get('uuid', '')
         base['network'] = params.get('type', 'tcp')
-        # encryption 字段（VLESS 默认为 none）
-        base['encryption'] = params.get('encryption', 'none')
 
         # 处理 security 字段（tls/reality/none）
         security = params.get('security', 'none')
-        base['security'] = security
 
         if security == 'reality':
             # Reality 模式
@@ -1149,9 +1146,8 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
             pbk = params.get('pbk', '')
             if pbk:
                 reality_opts['public-key'] = pbk
-            sid = params.get('sid', '')
-            if sid:
-                reality_opts['short-id'] = sid
+            # short-id 即使为空也要输出
+            reality_opts['short-id'] = params.get('sid', '')
             if reality_opts:
                 base['reality-opts'] = reality_opts
 
