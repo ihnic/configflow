@@ -94,7 +94,9 @@ case "$choice" in
         printf "%b\n" "${{YELLOW}}删除程序文件和配置...${{NC}}"
         rm -rf /opt/configflow-agent
         rm -f /var/log/configflow-agent.log
+        rm -f /var/log/configflow-agent.log.*
         rm -f /run/configflow-agent.pid
+        rm -f /etc/logrotate.d/configflow-agent
 
         # 清理锁文件和临时文件
         printf "%b\n" "${{YELLOW}}清理锁文件和临时文件...${{NC}}"
@@ -307,6 +309,42 @@ cat > config.json << EOF
   "heartbeat_interval": 30
 }}
 EOF
+
+# 配置日志轮转
+printf "%b\n" "${{YELLOW}}配置日志轮转...${{NC}}"
+
+# 如果没有 logrotate，尝试安装
+if ! command -v logrotate >/dev/null 2>&1; then
+    if [ -f /etc/alpine-release ]; then
+        # Alpine Linux
+        apk add --no-cache logrotate >/dev/null 2>&1 || true
+    elif command -v apt-get >/dev/null 2>&1; then
+        # Debian/Ubuntu
+        apt-get update -qq && apt-get install -y -qq logrotate >/dev/null 2>&1 || true
+    elif command -v yum >/dev/null 2>&1; then
+        # CentOS/RHEL
+        yum install -y -q logrotate >/dev/null 2>&1 || true
+    fi
+fi
+
+# 配置 logrotate（如果安装成功）
+if command -v logrotate >/dev/null 2>&1; then
+    cat > /etc/logrotate.d/configflow-agent << 'LOGROTATE_EOF'
+/var/log/configflow-agent.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    size 50M
+    copytruncate
+}
+LOGROTATE_EOF
+    printf "%b\n" "${{GREEN}}日志轮转配置完成（保留7天，超过50M自动轮转）${{NC}}"
+else
+    printf "%b\n" "${{YELLOW}}跳过日志轮转配置（logrotate 未安装）${{NC}}"
+fi
 
 # 根据 Init 系统创建服务
 if [ "$INIT_SYSTEM" = "openrc" ]; then
