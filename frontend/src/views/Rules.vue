@@ -53,7 +53,7 @@
               <button class="card-drag-handle" type="button" @click.stop>
                 <el-icon><DCaret /></el-icon>
               </button>
-              <div class="card-title">{{ item.count }} 个规则集</div>
+              <div class="card-title">{{ item.groupName || `${item.count} 个规则集` }}</div>
             </div>
             <button class="expand-btn" @click.stop="toggleGroup(item.groupId)">
               <el-icon><ArrowDown /></el-icon>
@@ -62,10 +62,15 @@
 
           <div class="card-meta">
             <span class="meta-pill group-pill">规则集组</span>
+            <span v-if="item.groupName" class="meta-pill count-pill">{{ item.count }} 个</span>
             <span class="meta-pill policy-pill">{{ item.policy }}</span>
           </div>
 
           <div class="card-actions">
+            <el-button class="card-btn" size="small" @click.stop="showGroupRenameDialog(item)">
+              <el-icon><Edit /></el-icon>
+              重命名
+            </el-button>
             <el-button class="card-btn primary" size="small" @click.stop="toggleGroup(item.groupId)">
               查看全部
             </el-button>
@@ -262,6 +267,31 @@
       </template>
     </el-dialog>
 
+    <!-- 规则集组重命名对话框 -->
+    <el-dialog v-model="groupRenameDialogVisible" title="重命名规则集组" width="400px" class="rule-dialog">
+      <div class="dialog-card">
+        <el-form :model="groupRenameForm" label-width="80px" class="rule-form">
+          <el-form-item label="组名称">
+            <el-input
+              v-model="groupRenameForm.groupName"
+              placeholder="输入规则集组名称，留空则显示数量"
+              clearable
+            />
+          </el-form-item>
+        </el-form>
+        <div class="rename-tip">
+          <el-icon><InfoFilled /></el-icon>
+          <span>该名称将应用到组内所有 {{ groupRenameForm.items.length }} 个规则集</span>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button class="footer-btn ghost" @click="groupRenameDialogVisible = false">取消</el-button>
+          <el-button class="footer-btn primary" type="primary" @click="saveGroupName">保存</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- 规则索引对话框 -->
     <el-dialog v-model="ruleIndexDialogVisible" title="规则索引" width="600px" class="rule-dialog">
       <div class="dialog-card">
@@ -376,7 +406,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, onActivated, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { DCaret, Edit, Delete, FolderOpened, ArrowUp, ArrowDown, Search, Plus, View, Hide } from '@element-plus/icons-vue'
+import { DCaret, Edit, Delete, FolderOpened, ArrowUp, ArrowDown, Search, Plus, View, Hide, InfoFilled } from '@element-plus/icons-vue'
 import { ruleApi, ruleSetApi, proxyGroupApi } from '@/api'
 import type { Rule, RuleSet, ProxyGroup } from '@/types'
 import Sortable from 'sortablejs'
@@ -438,6 +468,42 @@ const toggleGroup = (groupId: string) => {
   }
 }
 
+// 规则集组重命名相关
+const groupRenameDialogVisible = ref(false)
+const groupRenameForm = ref({
+  groupId: '',
+  groupName: '',
+  items: [] as any[]
+})
+
+// 显示重命名对话框
+const showGroupRenameDialog = (group: any) => {
+  groupRenameForm.value = {
+    groupId: group.groupId,
+    groupName: group.groupName || '',
+    items: group.items
+  }
+  groupRenameDialogVisible.value = true
+}
+
+// 保存规则集组名称
+const saveGroupName = async () => {
+  try {
+    const newGroupName = groupRenameForm.value.groupName.trim()
+    // 更新组内所有规则集的 group_name 字段
+    for (const item of groupRenameForm.value.items) {
+      const updatedItem = { ...item, group_name: newGroupName }
+      delete updatedItem.uniqueId // 移除前端添加的字段
+      await ruleSetApi.update(item.id, updatedItem)
+    }
+    ElMessage.success('重命名成功')
+    groupRenameDialogVisible.value = false
+    loadAllRules()
+  } catch (error) {
+    ElMessage.error('重命名失败')
+  }
+}
+
 // 分组并合并连续相同策略的规则
 const allRulesAndSets = computed(() => {
   const result: any[] = []
@@ -465,6 +531,7 @@ const allRulesAndSets = computed(() => {
           isGroup: true,
           groupId: groupId,
           policy: item.policy,
+          groupName: item.group_name || '',  // 使用第一个规则集的 group_name 作为组名称
           count: 1,
           items: [itemWithId],
           uniqueId: groupId
@@ -1483,6 +1550,29 @@ onActivated(() => {
   background: rgba(107, 115, 255, 0.12);
   color: #4e5eff;
   border: 1px solid rgba(107, 115, 255, 0.18);
+}
+
+.count-pill {
+  background: rgba(103, 194, 58, 0.12);
+  color: #67c23a;
+  border: 1px solid rgba(103, 194, 58, 0.18);
+}
+
+.rename-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: rgba(107, 115, 255, 0.06);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #7f87af;
+  margin-top: 8px;
+}
+
+.rename-tip .el-icon {
+  color: #6b73ff;
+  font-size: 16px;
 }
 
 .card-body {
