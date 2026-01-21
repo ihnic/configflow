@@ -253,7 +253,7 @@ const checkAuthStatus = async () => {
 
 // 打开 GitHub 文档
 const openGithub = () => {
-  window.open('https://github.com/thsrite/config-flow', '_blank')
+  window.open('https://github.com/thsrite/configflow', '_blank')
 }
 
 // 处理用户操作命令
