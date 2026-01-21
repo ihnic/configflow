@@ -3,6 +3,8 @@ name: Docker Agent AIO Build
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - 'backend/agents/**'
       - 'docker/Dockerfile.agent.aio'

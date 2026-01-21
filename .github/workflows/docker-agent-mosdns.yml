@@ -2,6 +2,8 @@ name: Docker Agent MosDNS Build
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'backend/agents/**'
       - 'docker/Dockerfile.agent.mosdns'
