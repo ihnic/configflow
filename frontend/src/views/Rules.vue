@@ -268,20 +268,20 @@
     </el-dialog>
 
     <!-- 规则集组重命名对话框 -->
-    <el-dialog v-model="groupRenameDialogVisible" title="重命名规则集组" width="400px" class="rule-dialog">
+    <el-dialog v-model="groupRenameDialogVisible" title="重命名规则集组" width="450px" class="rule-dialog">
       <div class="dialog-card">
-        <el-form :model="groupRenameForm" label-width="80px" class="rule-form">
+        <el-form :model="groupRenameForm" label-width="70px" class="rule-form">
           <el-form-item label="组名称">
             <el-input
               v-model="groupRenameForm.groupName"
-              placeholder="输入规则集组名称，留空则显示数量"
+              placeholder="输入名称，留空显示数量"
               clearable
             />
           </el-form-item>
         </el-form>
         <div class="rename-tip">
           <el-icon><InfoFilled /></el-icon>
-          <span>该名称将应用到组内所有 {{ groupRenameForm.items.length }} 个规则集</span>
+          <span>将应用到组内 {{ groupRenameForm.items.length }} 个规则集</span>
         </div>
       </div>
       <template #footer>
