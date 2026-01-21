@@ -21,25 +21,24 @@ env:
   IMAGE_NAME: thsrite/config-flow
 
 jobs:
-  # 并行构建各平台镜像
+  # 并行构建各平台镜像（使用原生 runner）
   build:
-    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux/amd64
-          - linux/arm64
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm  # 原生 ARM64 runner，比 QEMU 快 5-6 倍
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
