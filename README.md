@@ -107,16 +107,16 @@ services:
 
 ## 📖 文档
 
-详细使用文档请查看：**[ConfigFlow 使用指南](configflow_doc/README.md)**
+详细使用文档请查看：**[ConfigFlow 使用指南](doc/README.md)**
 
 ---
 
 ## 📸 截图预览
 
 <div align="center">
-<img src="configflow_doc/img/img6.png" width="80%" />
+<img src="doc/img/img6.png" width="80%" />
 <br/><br/>
-<img src="configflow_doc/img/img2.png" width="80%" />
+<img src="doc/img/img2.png" width="80%" />
 </div>
 
 ---
@@ -147,7 +147,7 @@ config-flow/
 │       ├── views/         # 页面组件
 │       ├── components/    # 公共组件
 │       └── api/           # API 调用
-├── configflow_doc/        # 项目文档
+├── doc/        # 项目文档
 ├── Dockerfile
 ├── docker-compose.yml
 └── nginx.conf
