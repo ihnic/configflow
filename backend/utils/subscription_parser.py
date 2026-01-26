@@ -19,7 +19,7 @@ def parse_subscription(url: str) -> List[Dict[str, Any]]:
         }
         response = requests.get(url, headers=headers, timeout=30)
         response.raise_for_status()
-        content = response.text
+        content = response.content.decode('utf-8')
 
         # 尝试解析 YAML 格式 (Clash/Mihomo)
         if 'proxies:' in content or 'proxies :' in content:
