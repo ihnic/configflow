@@ -285,6 +285,12 @@ def parse_vless(uri: str) -> Dict[str, Any]:
         node_params['sid'] = params.get('sid', '')  # short id
         node_params['spx'] = params.get('spx', '')  # spider-x
 
+    # ECH (Encrypted Client Hello) 参数 - 仅 TLS 模式
+    if params.get('security') == 'tls':
+        ech = params.get('ech', '')
+        if ech:
+            node_params['ech'] = ech
+
     # 传输协议相关参数
     if params.get('type') == 'ws':
         node_params['ws-opts'] = {

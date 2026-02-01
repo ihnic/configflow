@@ -1248,6 +1248,20 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
                 if fp:
                     base['client-fingerprint'] = fp
 
+            # ECH (Encrypted Client Hello) 参数
+            ech_opts = params.get('ech-opts')
+            if ech_opts:
+                # 已是 Mihomo 格式
+                base['ech-opts'] = ech_opts
+            else:
+                # 从 URI 格式解析
+                ech = params.get('ech', '')
+                if ech:
+                    base['ech-opts'] = {
+                        'enable': True,
+                        'config': ech
+                    }
+
         # 流控参数 (flow)
         flow = params.get('flow', '')
         if flow:
