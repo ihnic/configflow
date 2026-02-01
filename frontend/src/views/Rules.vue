@@ -373,6 +373,7 @@
                 </div>
               </el-option>
             </el-select>
+            <div class="form-hint">已添加的规则不会重复显示在列表中</div>
           </el-form-item>
           <el-form-item label="名称">
             <el-input v-model="ruleSetForm.name" placeholder="规则集名称" :disabled="!!selectedLibraryRule" />
@@ -2014,6 +2015,12 @@ onActivated(() => {
 .form-tip {
   font-size: 12px;
   color: #909399;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 6px;
 }
 
 .dialog-footer {
