@@ -1293,4 +1293,29 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
                 formatted_key = key.replace('_', '-')
                 base[formatted_key] = value
 
+    elif node_type == 'socks5' or node_type == 'socks':
+        base['type'] = 'socks5'
+
+        # 账号密码
+        if node.get('username'):
+            base['username'] = node.get('username')
+        if node.get('password'):
+            base['password'] = node.get('password')
+
+        # TLS 处理：仅当 tls 为 True 时处理后续
+        if node.get('tls') is True:
+            base['tls'] = True
+            if node.get('sni'):
+                base['sni'] = node.get('sni')
+            if node.get('fingerprint'):
+                base['fingerprint'] = node.get('fingerprint')
+            if node.get('skip-cert-verify') is not None:
+                base['skip-cert-verify'] = node.get('skip-cert-verify')
+
+        # UDP 和 IP 版本
+        if node.get('udp') is not None:
+            base['udp'] = node.get('udp')
+        if node.get('ip-version'):
+            base['ip-version'] = node.get('ip-version')
+
     return base
