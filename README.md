@@ -28,7 +28,7 @@
 
 ### 📦 订阅管理
 - 多订阅源支持（Mihomo/Surge/通用格式）
-- 自动解析订阅获取节点
+- 通过 [Sub-Store](https://github.com/sub-store-org/Sub-Store) 解析订阅和转换节点格式
 - 支持 Base64、YAML、URI 多种格式
 
 ### 🌐 节点管理
@@ -68,22 +68,7 @@
 
 ## 🚀 快速开始
 
-### Docker 部署（推荐）
-
-```bash
-docker run -d \
-  --name config-flow \
-  -p 80:80 \
-  -v $(pwd)/data:/data \
-  -e ADMIN_USERNAME=admin \
-  -e ADMIN_PASSWORD=your_password \
-  -e JWT_SECRET_KEY=your-secret-key \
-  thsrite/config-flow:latest
-```
-
-访问 `http://localhost` 即可使用
-
-### Docker Compose
+### Docker Compose 部署（推荐）
 
 ```yaml
 version: '3.8'
@@ -98,10 +83,23 @@ services:
       - ADMIN_USERNAME=admin
       - ADMIN_PASSWORD=your_password
       - JWT_SECRET_KEY=your-secret-key
+      - SUB_STORE_URL=http://sub-store:3001
+    depends_on:
+      - sub-store
     restart: unless-stopped
+
+  sub-store:
+    image: xream/sub-store:latest
+    restart: unless-stopped
+    volumes:
+      - ./sub-store-data:/root/sub-store-data
+    environment:
+      - SUB_STORE_BACKEND_API_PORT=3001
 ```
 
-> 💡 **提示**：生产环境请务必修改默认密码和 JWT 密钥
+访问 `http://localhost` 即可使用
+
+> 💡 **提示**：生产环境请务必修改默认密码和 JWT 密钥；Sub-Store 用于订阅解析和节点格式转换
 
 ---
 
@@ -127,6 +125,7 @@ services:
 |------|------|
 | **后端** | Python 3.11 • Flask • PyYAML |
 | **前端** | Vue 3 • TypeScript • Element Plus • Vite |
+| **订阅解析** | [Sub-Store](https://github.com/sub-store-org/Sub-Store) |
 | **部署** | Docker • Nginx • Supervisor |
 
 ---

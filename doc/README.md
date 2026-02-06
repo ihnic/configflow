@@ -32,10 +32,11 @@
 
 ### 📝 订阅管理
 
-集中管理多个代理订阅源，支持 Mihomo、Surge（敬请期待） 和通用格式。
+集中管理多个代理订阅源，通过 [Sub-Store](https://github.com/sub-store-org/Sub-Store) 解析订阅和转换节点格式。
 
 **主要特性：**
 - 添加和管理多个订阅源
+- 通过 Sub-Store 自动解析订阅、转换节点格式
 - 支持多种订阅格式（base64、YAML、URI）
 - 拖拽排序订阅列表
 - 自动清理策略组引用
@@ -46,11 +47,12 @@
 
 ### 🖥️ 节点管理
 
-完整的节点增删改查功能，支持单个添加和批量导入。
+完整的节点增删改查功能，支持单个添加和批量导入，通过 Sub-Store 进行节点格式转换。
 
 **主要特性：**
 - 支持多种协议：SS、VMess、VLess、Trojan、Hysteria2
 - 三种添加格式：URI、JSON、YAML
+- 通过 Sub-Store 自动转换节点为 Mihomo 格式
 - 批量添加/删除节点
 - 节点启用/禁用
 - 拖拽排序
@@ -132,22 +134,40 @@
 
 ### 1. 部署系统
 
-使用 Docker 快速部署：
+推荐使用 Docker Compose 部署（包含 Sub-Store 服务）：
 
-```bash
-docker run -d \
-  --name config-flow \
-  -p 80:80 \
-  -v $(pwd)/data:/data \
-  -e ADMIN_USERNAME=admin \
-  -e ADMIN_PASSWORD=admin123 \
-  -e JWT_SECRET_KEY=your-secret-key-please-change-in-production \
-  thsrite/config-flow:latest
+创建 `docker-compose.yml`：
+```yaml
+version: '3.8'
+services:
+  config-flow:
+    image: thsrite/config-flow:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./data:/data
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - JWT_SECRET_KEY=your-secret-key-please-change-in-production
+      - SUB_STORE_URL=http://sub-store:3001
+    depends_on:
+      - sub-store
+    restart: unless-stopped
+
+  sub-store:
+    image: xream/sub-store:latest
+    restart: unless-stopped
+    volumes:
+      - ./sub-store-data:/root/sub-store-data
+    environment:
+      - SUB_STORE_BACKEND_API_PORT=3001
 ```
 
-访问 `http://localhost` 即可使用。
+启动：`docker-compose up -d`，访问 `http://localhost` 即可使用。
 
 > 请把 `ADMIN_PASSWORD` 和 `JWT_SECRET_KEY` 替换为更安全的值，生产环境务必更新凭据。
+> Sub-Store 用于订阅解析和节点格式转换，也可在「配置生成」页面配置已有的 Sub-Store 地址。
 
 [查看完整部署指南 →](module/deployment.md)
 
@@ -224,11 +244,13 @@ A: 规则按照从上到下的顺序匹配，第一个匹配的规则生效。�
 
 A: 可以，系统支持添加多个订阅源，在策略组中可以选择从特定订阅筛选节点。
 
+**Q: Sub-Store 是什么？**
+
+A: [Sub-Store](https://github.com/sub-store-org/Sub-Store) 是一个开源的订阅管理工具，ConfigFlow 使用它来解析订阅和转换节点格式。推荐通过 Docker Compose 一并部署，也可在「配置生成」页面配置已有的 Sub-Store 地址。
+
 **Q: 如何更新到最新版本？**
 ```bash
-docker stop config-flow
-docker rm config-flow
-docker pull thsrite/config-flow:latest
-docker run -d --name config-flow -p 80:80 -v $(pwd)/data:/data thsrite/config-flow:latest
+docker-compose pull
+docker-compose up -d
 ```
 

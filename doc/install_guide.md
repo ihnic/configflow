@@ -10,23 +10,42 @@
 ## 快速部署
 > 目标：把服务跑起来，确保能打开页面。
 
-在准备好的文件夹中执行以下命令：
-```bash
-docker run -d \
-  --name config-flow \
-  -p 80:80 \
-  -v $(pwd)/data:/data \
-  -e ADMIN_USERNAME=admin \
-  -e ADMIN_PASSWORD=admin123 \
-  -e JWT_SECRET_KEY=your-secret-key-please-change-in-production \
-  thsrite/config-flow:latest
+在准备好的文件夹中创建 `docker-compose.yml`：
+```yaml
+version: '3.8'
+services:
+  config-flow:
+    image: thsrite/config-flow:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./data:/data
+    environment:
+      - ADMIN_USERNAME=admin
+      - ADMIN_PASSWORD=admin123
+      - JWT_SECRET_KEY=your-secret-key-please-change-in-production
+      - SUB_STORE_URL=http://sub-store:3001
+    depends_on:
+      - sub-store
+    restart: unless-stopped
+
+  sub-store:
+    image: xream/sub-store:latest
+    restart: unless-stopped
+    volumes:
+      - ./sub-store-data:/root/sub-store-data
+    environment:
+      - SUB_STORE_BACKEND_API_PORT=3001
 ```
 
-命令执行完成后：
+执行 `docker-compose up -d` 启动服务。
+
+启动完成后：
 - 访问 `http://localhost`，出现登录页说明部署成功。
-- `-v $(pwd)/data:/data` 会把数据保存到当前目录的 `data` 文件夹，方便以后迁移或备份。
+- `./data` 保存 ConfigFlow 数据，`./sub-store-data` 保存 Sub-Store 数据，方便以后迁移或备份。
 
 > 请把 `ADMIN_PASSWORD` 和 `JWT_SECRET_KEY` 替换为更安全的值，生产环境务必更新凭据。
+> Sub-Store 用于订阅解析和节点格式转换。如果已有 Sub-Store 服务，可移除 `sub-store` 部分，在「配置生成」页面配置已有的 Sub-Store URL。
 
 ---
 
@@ -50,8 +69,8 @@ docker run -d \
 ---
 
 ## 功能速览
-- **订阅管理**：统一管理多个订阅源，支持拖拽排序和格式转换。
-- **节点管理**：支持常见协议，批量导入、启停。
+- **订阅管理**：统一管理多个订阅源，通过 Sub-Store 解析订阅和转换节点格式。
+- **节点管理**：支持常见协议，批量导入、启停，通过 Sub-Store 自动转换节点格式。
 - **策略管理**：URL-Test、Fallback、Load-Balance 等策略，支持从订阅、节点中选择，支持跟随其他策略组（复用其他策略组的策略）。
 - **规则仓库与规则配置**：集中维护规则集，并按顺序控制流量去向。
 - **配置生成**：即时预览配置内容，可导出 JSON 备份，方便分享。
@@ -65,7 +84,7 @@ docker run -d \
 
 **Q：换电脑或重装系统会丢配置吗？** 不会，`data` 文件夹已经挂载在本地，复制该文件夹即可恢复。
 
-**Q：如何升级？** 执行 `docker stop config-flow && docker rm config-flow`，再拉取最新版镜像后按同样命令重新运行，旧数据会自动加载。
+**Q：如何升级？** 执行 `docker-compose pull && docker-compose up -d`，自动拉取最新镜像并重启，旧数据会自动加载。
 
 ---
 
