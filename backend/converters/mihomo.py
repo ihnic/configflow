@@ -1067,6 +1067,16 @@ def _parse_structured_proxy_string(proxy_string: str) -> Dict[str, Any] | None:
     return None
 
 
+def _fix_proxy_fields(proxy: Dict[str, Any]) -> Dict[str, Any]:
+    """补全 Mihomo 代理节点的必需字段。
+
+    某些来源（Sub-Store、手动 YAML）可能缺少必需字段导致 Mihomo 报错。
+    """
+    if proxy and proxy.get('type') == 'vless' and not proxy.get('encryption'):
+        proxy['encryption'] = 'none'
+    return proxy
+
+
 def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
     """将通用节点格式转换为 Mihomo 格式。
 
@@ -1086,14 +1096,14 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
         if parsed:
             logger.info(f"节点 '{outer_name}' 为 JSON/YAML 格式，本地解析")
             parsed['name'] = outer_name
-            return parsed
+            return _fix_proxy_fields(parsed)
 
         # URI 或 base64 格式，通过 Sub-Store 转换
         logger.info(f"节点 '{outer_name}' 为 URI/base64 格式，调用 Sub-Store 转换")
         proxy = convert_proxy_string(proxy_string)
         if proxy:
             proxy['name'] = outer_name
-            return proxy
+            return _fix_proxy_fields(proxy)
         return None
 
     # 已经是结构化的节点（从缓存加载的），将 params 展开为扁平 mihomo 格式
@@ -1110,4 +1120,4 @@ def convert_node_to_mihomo(node: Dict[str, Any]) -> Dict[str, Any]:
     }
     # 将 params 中的所有字段展开到顶层
     base.update(params)
-    return base
+    return _fix_proxy_fields(base)

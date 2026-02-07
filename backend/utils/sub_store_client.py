@@ -190,6 +190,13 @@ def convert_proxy_string(proxy_string, target='ClashMeta'):
         _delete_subscription(base, _TEMP_NODE_SUB_NAME)
 
 
+def _fix_proxy_fields(proxy):
+    """补全代理节点的必需字段（如 VLESS 的 encryption: none）"""
+    if isinstance(proxy, dict) and proxy.get('type') == 'vless' and not proxy.get('encryption'):
+        proxy['encryption'] = 'none'
+    return proxy
+
+
 def parse_proxies_from_yaml(yaml_text):
     """从 sub-store 返回的 YAML 文本中解析 proxies 列表。
 
@@ -201,7 +208,10 @@ def parse_proxies_from_yaml(yaml_text):
     """
     data = yaml.safe_load(yaml_text)
     if isinstance(data, dict):
-        return data.get('proxies', [])
+        proxies = data.get('proxies', [])
+        for proxy in proxies:
+            _fix_proxy_fields(proxy)
+        return proxies
     return []
 
 
