@@ -231,7 +231,7 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElLoading, ElMessageBox } from 'element-plus'
 import { Plus, DCaret, Connection, Loading, CircleCheck, CircleClose, Minus, RefreshRight, View, Hide, Link, Calendar, EditPen, Delete, Close } from '@element-plus/icons-vue'
-import { subscriptionApi } from '@/api'
+import { subscriptionApi, subStoreUrlApi } from '@/api'
 import type { Subscription } from '@/types'
 import Sortable from 'sortablejs'
 import api from '@/api'
@@ -388,7 +388,32 @@ const fetchAllSubscriptionsInBackground = async () => {
   }
 }
 
-const showAddDialog = () => {
+const checkSubStoreUrl = async (): Promise<boolean> => {
+  try {
+    const response = await subStoreUrlApi.get()
+    const url = response.data?.sub_store_url || ''
+    if (!url) {
+      await ElMessageBox.confirm(
+        '尚未配置 Sub-Store URL，订阅解析和节点格式转换功能将不可用。请前往「生成配置」页面配置 Sub-Store 地址。',
+        '提示',
+        {
+          confirmButtonText: '继续添加',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+    }
+    return true
+  } catch (error: any) {
+    if (error === 'cancel' || error?.toString?.().includes('cancel')) {
+      return false
+    }
+    return true
+  }
+}
+
+const showAddDialog = async () => {
+  if (!await checkSubStoreUrl()) return
   isEdit.value = false
   form.value = {
     id: `sub_${Date.now()}`,
