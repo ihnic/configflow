@@ -25,7 +25,18 @@ func GetLogsHandler(cfg *Config) http.HandlerFunc {
 			}
 		}
 
-		// 获取日志数据
+		// 如果指定了 log_path，直接读取该文件
+		if logPath := r.URL.Query().Get("log_path"); logPath != "" {
+			logs := readLogFile(logPath, lines)
+			JsonResponse(w, http.StatusOK, map[string]interface{}{
+				"success": true,
+				"logs":    escapeLogsForJSON(logs),
+				"service_name": cfg.ServiceName,
+			})
+			return
+		}
+
+		// 未指定路径，使用自动检测
 		logs, errLogs := getLogData(cfg.ServiceType, cfg.ConfigPath, lines)
 
 		JsonResponse(w, http.StatusOK, map[string]interface{}{
@@ -78,7 +89,18 @@ func PortBasedLogsHandler(cfg *Config) http.HandlerFunc {
 			}
 		}
 
-		// 获取日志数据
+		// 如果指定了 log_path，直接读取该文件
+		if logPath := r.URL.Query().Get("log_path"); logPath != "" {
+			logs := readLogFile(logPath, lines)
+			JsonResponse(w, http.StatusOK, map[string]interface{}{
+				"success": true,
+				"logs":    escapeLogsForJSON(logs),
+				"service_name": serviceName,
+			})
+			return
+		}
+
+		// 未指定路径，使用自动检测
 		logs, errLogs := getLogData(serviceType, configPath, lines)
 
 		JsonResponse(w, http.StatusOK, map[string]interface{}{
