@@ -800,8 +800,9 @@ def convert_proxy_group_to_surge(group: Dict[str, Any], config_data: Dict[str, A
                 'url': followed_group.get('url'),  # 跟随测试URL
                 'interval': followed_group.get('interval')  # 跟随测试间隔
             }
-            # 更新group_type为跟随的类型
-            group_type = followed_group['type']
+            # 更新group_type为跟随的类型（但保留 smart 覆盖）
+            if group_type != 'smart':
+                group_type = followed_group['type']
         else:
             # 如果找不到被跟随的策略组，跳过此策略组
             return None

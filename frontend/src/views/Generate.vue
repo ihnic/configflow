@@ -1087,6 +1087,7 @@
             :key="g.id"
             :label="g.name"
             :value="g.id"
+            :disabled="g.id !== item.group_id && surgeSmartGroups.some(s => s.group_id === g.id)"
           />
         </el-select>
         <el-input
