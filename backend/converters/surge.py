@@ -312,6 +312,13 @@ def generate_surge_config(config_data: Dict[str, Any], base_url: str = '') -> st
             ruleset_behaviors[ruleset_name] = lib_rule.get('behavior', '')
             ruleset_urls[ruleset_name] = lib_rule.get('url', '')
 
+    # Surge 规则类型映射（mihomo/Clash → Surge）
+    # Surge 没有 SRC-IP-CIDR，SRC-IP 原生支持 CIDR；Surge 用 DEST-PORT 而非 DST-PORT
+    surge_rule_type_map = {
+        'SRC-IP-CIDR': 'SRC-IP',
+        'DST-PORT': 'DEST-PORT',
+    }
+
     # 遍历合并后的规则数组，保持用户配置的顺序
     for item in config_data.get('rule_configs', []):
         if not item.get('enabled', True):
@@ -332,18 +339,22 @@ def generate_surge_config(config_data: Dict[str, Any], base_url: str = '') -> st
                 rules.append(f"RULE-SET,{value},{policy}")
             # 逻辑规则类型（AND、OR、NOT）需要特殊处理
             elif rule_type in ['AND', 'OR', 'NOT']:
-                # Surge 逻辑规则格式：AND,((SRC-IP,1.1.1.1), (DOMAIN,example.com)),POLICY
-                # Surge 要求子条件之间有空格：), ( 而不是 ),(
+                # Surge 逻辑规则格式：AND,((SRC-IP,192.168.1.110), (DOMAIN,example.com)),POLICY
+                # 1. 子条件之间需要空格：), ( 而不是 ),(
                 surge_value = value.replace('),(', '), (')
+                # 2. 替换子条件中的规则类型为 Surge 等效类型
+                for mihomo_type, surge_type in surge_rule_type_map.items():
+                    surge_value = surge_value.replace(mihomo_type, surge_type)
                 rules.append(f"{rule_type},{surge_value},{policy}")
             else:
-                # 标准规则类型：DOMAIN, DOMAIN-SUFFIX, DOMAIN-KEYWORD, IP-CIDR, IP-CIDR6, IP-SUFFIX, DST-PORT, SRC-PORT, GEOIP 等
+                # 标准规则类型，映射为 Surge 等效类型
+                surge_rule_type = surge_rule_type_map.get(rule_type, rule_type)
                 # 根据配置决定是否添加 no-resolve 参数
                 no_resolve = item.get('no_resolve', False)
                 if no_resolve:
-                    rules.append(f"{rule_type},{value},{policy},no-resolve")
+                    rules.append(f"{surge_rule_type},{value},{policy},no-resolve")
                 else:
-                    rules.append(f"{rule_type},{value},{policy}")
+                    rules.append(f"{surge_rule_type},{value},{policy}")
 
         elif item_type == 'ruleset':
             # 规则集引用
