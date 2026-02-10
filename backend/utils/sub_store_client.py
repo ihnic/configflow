@@ -111,12 +111,14 @@ def get_subscription_proxies_yaml(sub_id, url, target='ClashMeta'):
     base = _get_base_url()
     logger.info(f"Sub-Store base URL: {base}")
 
+    # 使用带前缀的临时名称，避免和 Sub-Store 中已有订阅冲突
+    temp_name = f"_cf_tmp_{sub_id}"
     # 创建临时订阅
-    _create_subscription(base, sub_id, url)
+    _create_subscription(base, temp_name, url)
 
     try:
         # 下载订阅（target 放在路径中，这是 Sub-Store 推荐的方式）
-        download_url = f'{base}/download/{quote(sub_id, safe="")}/{target}'
+        download_url = f'{base}/download/{quote(temp_name, safe="")}/{target}'
         logger.info(f"Sub-Store 下载: {download_url}")
 
         resp = requests.get(download_url, timeout=30)
@@ -135,10 +137,10 @@ def get_subscription_proxies_yaml(sub_id, url, target='ClashMeta'):
         return text
     finally:
         # 用完即删，不在 Sub-Store 中残留订阅数据
-        _delete_subscription(base, sub_id)
+        _delete_subscription(base, temp_name)
 
 
-_TEMP_NODE_SUB_NAME = '_config_flow_temp_node'
+_TEMP_NODE_SUB_NAME = '_cf_tmp_node_convert'
 
 
 def convert_proxy_string(proxy_string, target='ClashMeta'):
