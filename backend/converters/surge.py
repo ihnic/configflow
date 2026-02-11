@@ -96,28 +96,26 @@ def generate_surge_config(config_data: Dict[str, Any], base_url: str = '') -> st
     smart_groups_config = surge_config_data.get('smart_groups', [])
     smart_group_map = {sg['group_id']: sg.get('policy_priority', '') for sg in smart_groups_config}
 
+    # 解析自定义配置的所有 section
+    custom_sections = {}  # section_name -> full_text (含 [SectionName] 行)
     if custom_surge_config and custom_surge_config.strip():
-        # 使用自定义配置作为基础
-        # 提取 [General] 部分（如果有）
-        general_section = None
-        lines = custom_surge_config.strip().split('\n')
-        in_general = False
-        general_lines = []
+        current_section = None
+        current_lines = []
+        for line in custom_surge_config.strip().split('\n'):
+            if line.strip().startswith('[') and ']' in line.strip():
+                # 保存前一个 section
+                if current_section:
+                    custom_sections[current_section] = '\n'.join(current_lines)
+                current_section = line.strip().split(']')[0].split('[')[1]
+                current_lines = [line]
+            else:
+                if current_section:
+                    current_lines.append(line)
+        if current_section:
+            custom_sections[current_section] = '\n'.join(current_lines)
 
-        for line in lines:
-            if line.strip().startswith('[General]'):
-                in_general = True
-                general_lines.append(line)
-            elif line.strip().startswith('[') and in_general:
-                # 遇到下一个 section，停止
-                break
-            elif in_general:
-                general_lines.append(line)
-
-        if general_lines:
-            general_section = '\n'.join(general_lines)
-    else:
-        general_section = None
+    # 提取 [General]（沿用现有逻辑）
+    general_section = custom_sections.get('General', None)
 
     # 如果没有自定义 General 部分，使用默认配置
     if not general_section:
@@ -402,6 +400,12 @@ def generate_surge_config(config_data: Dict[str, Any], base_url: str = '') -> st
     # 添加WireGuard sections（如果有）
     if wireguard_sections:
         sections.extend(wireguard_sections)
+
+    # 追加自定义配置中的非自动生成 section
+    auto_sections = {'General', 'Proxy', 'Proxy Group', 'Rule'}
+    for section_name, section_content in custom_sections.items():
+        if section_name not in auto_sections:
+            sections.append(section_content)
 
     # 组合所有部分
     config_output = '\n\n'.join(sections)
