@@ -1537,7 +1537,8 @@ def generate_docker_mihomo_compose(
     server_url: str,
     agent_token: str,
     agent_name: str = "mihomo-agent",
-    data_dir: str = "./mihomo_data"
+    data_dir: str = "./mihomo_data",
+    network_mode: str = "host"
 ) -> str:
     """
     生成 Mihomo Docker Compose 配置
@@ -1547,10 +1548,25 @@ def generate_docker_mihomo_compose(
         agent_token: Agent 令牌
         agent_name: Agent 名称
         data_dir: 数据目录路径
+        network_mode: 网络模式 (host/bridge)
 
     Returns:
         Docker Compose YAML 配置
     """
+    # 根据网络模式决定是否添加端口映射
+    if network_mode == "bridge":
+        ports_section = """    ports:
+      - "8080:8080"
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "1053:1053"
+      - "7890:7890"
+      - "7891:7891"
+      - "9090:9090"
+"""
+    else:
+        ports_section = ""
+
     compose_template = """version: '3.8'
 
 services:
@@ -1558,8 +1574,8 @@ services:
     image: thsrite/config-flow-agent:latest
     container_name: {agent_name}
     restart: unless-stopped
-    network_mode: host
-    environment:
+    network_mode: {network_mode}
+{ports_section}    environment:
       - SERVER_URL={server_url}
       - AGENT_TOKEN={agent_token}
       - AGENT_NAME={agent_name}
@@ -1580,7 +1596,9 @@ services:
         server_url=server_url,
         agent_token=agent_token,
         agent_name=agent_name,
-        data_dir=data_dir
+        data_dir=data_dir,
+        network_mode=network_mode,
+        ports_section=ports_section
     )
 
 
@@ -1588,7 +1606,8 @@ def generate_docker_mihomo_run(
     server_url: str,
     agent_token: str,
     agent_name: str = "mihomo-agent",
-    data_dir: str = "./mihomo_data"
+    data_dir: str = "./mihomo_data",
+    network_mode: str = "host"
 ) -> str:
     """
     生成 Mihomo Docker Run 命令
@@ -1598,10 +1617,24 @@ def generate_docker_mihomo_run(
         agent_token: Agent 令牌
         agent_name: Agent 名称
         data_dir: 数据目录路径
+        network_mode: 网络模式 (host/bridge)
 
     Returns:
         Docker run 命令脚本
     """
+    # 根据网络模式决定是否添加端口映射
+    if network_mode == "bridge":
+        ports_mapping = """  -p 8080:8080 \\
+  -p 53:53/udp \\
+  -p 53:53/tcp \\
+  -p 1053:1053 \\
+  -p 7890:7890 \\
+  -p 7891:7891 \\
+  -p 9090:9090 \\
+"""
+    else:
+        ports_mapping = ""
+
     run_command = """#!/bin/bash
 
 # 创建数据目录
@@ -1611,8 +1644,8 @@ mkdir -p {data_dir}
 docker run -d \\
   --name {agent_name} \\
   --restart unless-stopped \\
-  --network host \\
-  -e SERVER_URL="{server_url}" \\
+  --network {network_mode} \\
+{ports_mapping}  -e SERVER_URL="{server_url}" \\
   -e AGENT_TOKEN="{agent_token}" \\
   -e AGENT_NAME="{agent_name}" \\
   -e SERVICE_TYPE="mihomo" \\
@@ -1633,7 +1666,9 @@ echo "查看日志: docker logs -f {agent_name}"
         server_url=server_url,
         agent_token=agent_token,
         agent_name=agent_name,
-        data_dir=data_dir
+        data_dir=data_dir,
+        network_mode=network_mode,
+        ports_mapping=ports_mapping
     )
 
 
@@ -1641,7 +1676,8 @@ def generate_docker_mosdns_compose(
     server_url: str,
     agent_token: str,
     agent_name: str = "mosdns-agent",
-    data_dir: str = "./mosdns_data"
+    data_dir: str = "./mosdns_data",
+    network_mode: str = "host"
 ) -> str:
     """
     生成 MosDNS Docker Compose 配置
@@ -1651,10 +1687,21 @@ def generate_docker_mosdns_compose(
         agent_token: Agent 令牌
         agent_name: Agent 名称
         data_dir: 数据目录路径
+        network_mode: 网络模式 (host/bridge)
 
     Returns:
         Docker Compose YAML 配置
     """
+    # 根据网络模式决定是否添加端口映射
+    if network_mode == "bridge":
+        ports_section = """    ports:
+      - "8081:8081"
+      - "53:53/udp"
+      - "53:53/tcp"
+"""
+    else:
+        ports_section = ""
+
     compose_template = """version: '3.8'
 
 services:
@@ -1662,8 +1709,8 @@ services:
     image: thsrite/config-flow-agent:latest
     container_name: {agent_name}
     restart: unless-stopped
-    network_mode: host
-    environment:
+    network_mode: {network_mode}
+{ports_section}    environment:
       - SERVER_URL={server_url}
       - AGENT_TOKEN={agent_token}
       - AGENT_NAME={agent_name}
@@ -1684,7 +1731,9 @@ services:
         server_url=server_url,
         agent_token=agent_token,
         agent_name=agent_name,
-        data_dir=data_dir
+        data_dir=data_dir,
+        network_mode=network_mode,
+        ports_section=ports_section
     )
 
 
@@ -1692,7 +1741,8 @@ def generate_docker_mosdns_run(
     server_url: str,
     agent_token: str,
     agent_name: str = "mosdns-agent",
-    data_dir: str = "./mosdns_data"
+    data_dir: str = "./mosdns_data",
+    network_mode: str = "host"
 ) -> str:
     """
     生成 MosDNS Docker Run 命令
@@ -1702,10 +1752,20 @@ def generate_docker_mosdns_run(
         agent_token: Agent 令牌
         agent_name: Agent 名称
         data_dir: 数据目录路径
+        network_mode: 网络模式 (host/bridge)
 
     Returns:
         Docker run 命令脚本
     """
+    # 根据网络模式决定是否添加端口映射
+    if network_mode == "bridge":
+        ports_mapping = """  -p 8081:8081 \\
+  -p 53:53/udp \\
+  -p 53:53/tcp \\
+"""
+    else:
+        ports_mapping = ""
+
     run_command = """#!/bin/bash
 
 # 创建数据目录
@@ -1715,8 +1775,8 @@ mkdir -p {data_dir}
 docker run -d \\
   --name {agent_name} \\
   --restart unless-stopped \\
-  --network host \\
-  -e SERVER_URL="{server_url}" \\
+  --network {network_mode} \\
+{ports_mapping}  -e SERVER_URL="{server_url}" \\
   -e AGENT_TOKEN="{agent_token}" \\
   -e AGENT_NAME="{agent_name}" \\
   -e SERVICE_TYPE="mosdns" \\
@@ -1737,7 +1797,9 @@ echo "查看日志: docker logs -f {agent_name}"
         server_url=server_url,
         agent_token=agent_token,
         agent_name=agent_name,
-        data_dir=data_dir
+        data_dir=data_dir,
+        network_mode=network_mode,
+        ports_mapping=ports_mapping
     )
 
 
@@ -1745,73 +1807,80 @@ def generate_docker_aio_compose(
     server_url: str,
     agent_token: str,
     agent_name: str = "aio-agent",
-    data_dir: str = "./aio_data"
+    data_dir: str = "./aio_data",
+    network_mode: str = "host"
 ) -> str:
     """
-    生成 All-in-One Docker Compose 配置（Mihomo + MosDNS）
+    生成 All-in-One Docker Compose 配置（使用统一镜像 + 环境变量控制）
+
+    符合作者新架构：单个镜像 thsrite/config-flow-agent:latest
+    通过 ENABLE_MIHOMO 和 ENABLE_MOSDNS 环境变量控制服务启动
 
     Args:
         server_url: 服务器 URL
         agent_token: Agent 令牌
         agent_name: Agent 名称
         data_dir: 数据目录路径
+        network_mode: 网络模式 (host/bridge)
 
     Returns:
         Docker Compose YAML 配置
     """
+    # 根据网络模式决定是否添加端口映射
+    if network_mode == "bridge":
+        ports_section = """    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "53:53/udp"
+      - "53:53/tcp"
+      - "1053:1053"
+      - "7890:7890"
+      - "7891:7891"
+      - "9090:9090"
+"""
+    else:
+        ports_section = ""
+
     compose_template = """version: '3.8'
 
 services:
-  mihomo:
+  aio-agent:
+    # 使用统一镜像，通过环境变量控制 Mihomo 和 MosDNS 的启动
     image: thsrite/config-flow-agent:latest
-    container_name: {agent_name}-mihomo
+    container_name: {agent_name}
     restart: unless-stopped
-    network_mode: host
-    environment:
+    network_mode: {network_mode}
+{ports_section}    environment:
+      # 基础配置
       - SERVER_URL={server_url}
       - AGENT_TOKEN={agent_token}
-      - AGENT_NAME={agent_name}-mihomo
-      - SERVICE_TYPE=mihomo
-      - DEPLOYMENT_METHOD=docker
-      - CONFIG_PATH=/root/.config/mihomo/config.yaml
-      - RESTART_COMMAND=supervisorctl restart mihomo
+      - TZ=Asia/Shanghai
+      # AIO 模式：同时启用 Mihomo 和 MosDNS
+      - ENABLE_MIHOMO=true
+      - ENABLE_MOSDNS=true
+      # Mihomo Agent 配置
+      - AGENT_MIHOMO_NAME={agent_name}-mihomo
+      - AGENT_MIHOMO_PORT=8080
+      # MosDNS Agent 配置
+      - AGENT_MOSDNS_NAME={agent_name}-mosdns
+      - AGENT_MOSDNS_PORT=8081
     volumes:
       - {data_dir}/mihomo:/root/.config/mihomo
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  mosdns:
-    image: thsrite/config-flow-agent:latest
-    container_name: {agent_name}-mosdns
-    restart: unless-stopped
-    network_mode: host
-    environment:
-      - SERVER_URL={server_url}
-      - AGENT_TOKEN={agent_token}
-      - AGENT_NAME={agent_name}-mosdns
-      - SERVICE_TYPE=mosdns
-      - DEPLOYMENT_METHOD=docker
-      - CONFIG_PATH=/etc/mosdns/config.yaml
-      - RESTART_COMMAND=supervisorctl restart mosdns
-    volumes:
       - {data_dir}/mosdns:/etc/mosdns
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
-    depends_on:
-      - mihomo
 """
 
     return compose_template.format(
         server_url=server_url,
         agent_token=agent_token,
         agent_name=agent_name,
-        data_dir=data_dir
+        data_dir=data_dir,
+        network_mode=network_mode,
+        ports_section=ports_section
     )
 
 
@@ -1819,73 +1888,79 @@ def generate_docker_aio_run(
     server_url: str,
     agent_token: str,
     agent_name: str = "aio-agent",
-    data_dir: str = "./aio_data"
+    data_dir: str = "./aio_data",
+    network_mode: str = "host"
 ) -> str:
     """
-    生成 All-in-One Docker Run 命令（Mihomo + MosDNS）
+    生成 All-in-One Docker Run 命令（使用统一镜像 + 环境变量控制）
+
+    符合作者新架构：单个镜像 thsrite/config-flow-agent:latest
+    通过 ENABLE_MIHOMO 和 ENABLE_MOSDNS 环境变量控制服务启动
 
     Args:
         server_url: 服务器 URL
         agent_token: Agent 令牌
         agent_name: Agent 名称
         data_dir: 数据目录路径
+        network_mode: 网络模式 (host/bridge)
 
     Returns:
         Docker run 命令脚本
     """
+    # 根据网络模式决定是否添加端口映射
+    if network_mode == "bridge":
+        ports_mapping = """  -p 8080:8080 \\
+  -p 8081:8081 \\
+  -p 53:53/udp \\
+  -p 53:53/tcp \\
+  -p 1053:1053 \\
+  -p 7890:7890 \\
+  -p 7891:7891 \\
+  -p 9090:9090 \\
+"""
+    else:
+        ports_mapping = ""
+
     run_command = """#!/bin/bash
 
 # 创建数据目录
 mkdir -p {data_dir}/mihomo
 mkdir -p {data_dir}/mosdns
 
-# 运行 Mihomo 容器
+# 运行 All-in-One 容器（使用统一镜像，通过环境变量控制服务启动）
 docker run -d \\
-  --name {agent_name}-mihomo \\
+  --name {agent_name} \\
   --restart unless-stopped \\
-  --network host \\
-  -e SERVER_URL="{server_url}" \\
+  --network {network_mode} \\
+{ports_mapping}  -e SERVER_URL="{server_url}" \\
   -e AGENT_TOKEN="{agent_token}" \\
-  -e AGENT_NAME="{agent_name}-mihomo" \\
-  -e SERVICE_TYPE="mihomo" \\
-  -e DEPLOYMENT_METHOD="docker" \\
-  -e CONFIG_PATH="/root/.config/mihomo/config.yaml" \\
-  -e RESTART_COMMAND="supervisorctl restart mihomo" \\
+  -e TZ=Asia/Shanghai \\
+  # AIO 模式：同时启用 Mihomo 和 MosDNS
+  -e ENABLE_MIHOMO="true" \\
+  -e ENABLE_MOSDNS="true" \\
+  # Mihomo Agent 配置
+  -e AGENT_MIHOMO_NAME="{agent_name}-mihomo" \\
+  -e AGENT_MIHOMO_PORT="8080" \\
+  # MosDNS Agent 配置
+  -e AGENT_MOSDNS_NAME="{agent_name}-mosdns" \\
+  -e AGENT_MOSDNS_PORT="8081" \\
   -v {data_dir}/mihomo:/root/.config/mihomo \\
-  --log-opt max-size=10m \\
-  --log-opt max-file=3 \\
-  thsrite/config-flow-agent:latest
-
-# 等待 Mihomo 启动
-sleep 3
-
-# 运行 MosDNS 容器
-docker run -d \\
-  --name {agent_name}-mosdns \\
-  --restart unless-stopped \\
-  --network host \\
-  -e SERVER_URL="{server_url}" \\
-  -e AGENT_TOKEN="{agent_token}" \\
-  -e AGENT_NAME="{agent_name}-mosdns" \\
-  -e SERVICE_TYPE="mosdns" \\
-  -e DEPLOYMENT_METHOD="docker" \\
-  -e CONFIG_PATH="/etc/mosdns/config.yaml" \\
-  -e RESTART_COMMAND="supervisorctl restart mosdns" \\
   -v {data_dir}/mosdns:/etc/mosdns \\
   --log-opt max-size=10m \\
   --log-opt max-file=3 \\
   thsrite/config-flow-agent:latest
 
 echo "All-in-One Agent 已启动"
-echo "Mihomo 容器: {agent_name}-mihomo"
-echo "MosDNS 容器: {agent_name}-mosdns"
-echo "查看 Mihomo 日志: docker logs -f {agent_name}-mihomo"
-echo "查看 MosDNS 日志: docker logs -f {agent_name}-mosdns"
+echo "容器名称: {agent_name}"
+echo "服务: Mihomo (端口 8080) + MosDNS (端口 8081)"
+echo "查看日志: docker logs -f {agent_name}"
 """
 
     return run_command.format(
         server_url=server_url,
         agent_token=agent_token,
         agent_name=agent_name,
-        data_dir=data_dir
+        data_dir=data_dir,
+        network_mode=network_mode,
+        ports_mapping=ports_mapping
     )
