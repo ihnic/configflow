@@ -252,27 +252,34 @@
             <el-radio-group v-model="scriptForm.installType" @change="onInstallTypeChange">
               <el-radio label="shell">Shell 安装</el-radio>
               <el-radio label="docker">Docker 容器</el-radio>
-              <el-radio label="docker-mihomo">Docker (Mihomo内置)</el-radio>
-              <el-radio label="docker-mosdns">Docker (mosdns内置)</el-radio>
-              <el-radio label="docker-aio">Docker (All-in-One)</el-radio>
             </el-radio-group>
             <div style="margin-top: 8px; color: #909399; font-size: 12px; line-height: 1.5;">
               <template v-if="scriptForm.installType === 'shell'">
                 Shell 安装：将 Agent 直接安装到系统服务
               </template>
-              <template v-else-if="scriptForm.installType === 'docker'">
-                Docker 容器：使用 Docker 容器运行 Agent
-              </template>
-              <template v-else-if="scriptForm.installType === 'docker-mihomo'">
-                Docker (Mihomo内置)：内置 Mihomo，一个容器运行 Agent+Mihomo
-              </template>
-              <template v-else-if="scriptForm.installType === 'docker-mosdns'">
-                Docker (mosdns内置)：内置 mosdns，一个容器运行 Agent+mosdns
-              </template>
               <template v-else>
-                Docker (三合一)：内置 Mihomo+mosdns，一个容器运行 Agent+Mihomo+mosdns
+                Docker 容器：使用 Docker 容器运行 Agent，内置 Mihomo/MosDNS 服务
               </template>
             </div>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="Docker 模式" v-if="scriptForm.installType === 'docker'">
+          <el-radio-group v-model="scriptForm.dockerMode" @change="onDockerModeChange">
+            <el-radio label="mihomo">Mihomo (Clash)</el-radio>
+            <el-radio label="mosdns">MosDNS</el-radio>
+            <el-radio label="aio">All-in-One (三合一)</el-radio>
+          </el-radio-group>
+          <div style="margin-top: 8px; color: #909399; font-size: 12px; line-height: 1.5;">
+            <template v-if="scriptForm.dockerMode === 'mihomo'">
+              内置 Mihomo，一个容器运行 Agent+Mihomo
+            </template>
+            <template v-else-if="scriptForm.dockerMode === 'mosdns'">
+              内置 MosDNS，一个容器运行 Agent+MosDNS
+            </template>
+            <template v-else>
+              内置 Mihomo+MosDNS，一个容器运行 Agent+Mihomo+MosDNS
+            </template>
           </div>
         </el-form-item>
 
@@ -280,11 +287,10 @@
           <el-input v-model="scriptForm.name" placeholder="例如：香港服务器" />
         </el-form-item>
 
-        <el-form-item v-if="scriptForm.installType !== 'docker-aio'" label="服务类型">
+        <el-form-item v-if="scriptForm.installType !== 'docker'" label="服务类型">
           <el-radio-group
             v-model="scriptForm.type"
             @change="onServiceTypeChange"
-            :disabled="scriptForm.installType === 'docker-mihomo' || scriptForm.installType === 'docker-mosdns'"
           >
             <el-radio
               v-for="option in serviceTypeOptions"
@@ -294,23 +300,24 @@
               {{ option.label }}
             </el-radio>
           </el-radio-group>
-          <div style="margin-top: 8px; color: #909399; font-size: 12px" v-if="scriptForm.installType === 'docker-mihomo'">
-            Docker Mihomo 版本仅支持 Mihomo 服务
-          </div>
-          <div style="margin-top: 8px; color: #909399; font-size: 12px" v-if="scriptForm.installType === 'docker-mosdns'">
-            Docker mosdns 版本仅支持 mosdns 服务
-          </div>
         </el-form-item>
 
-        <el-form-item label="Agent 端口" v-if="scriptForm.installType !== 'docker-aio'">
+        <el-form-item label="Agent 端口" v-if="scriptForm.installType !== 'docker'">
           <el-input-number v-model="scriptForm.port" :min="1024" :max="65535" />
         </el-form-item>
 
         <el-form-item label="Agent 端口" v-else>
           <div style="color: #909399; font-size: 14px; line-height: 1.8;">
-            <div>• Mihomo Agent: <span style="color: #409EFF; font-weight: 600;">8080</span></div>
-            <div>• MosDNS Agent: <span style="color: #67C23A; font-weight: 600;">8081</span></div>
-            <div style="margin-top: 4px; font-size: 12px;">All-in-One 版本使用固定端口</div>
+            <template v-if="scriptForm.dockerMode === 'mihomo'">
+              <div>• Mihomo Agent: <span style="color: #409EFF; font-weight: 600;">8080</span></div>
+            </template>
+            <template v-else-if="scriptForm.dockerMode === 'mosdns'">
+              <div>• MosDNS Agent: <span style="color: #67C23A; font-weight: 600;">8081</span></div>
+            </template>
+            <template v-else>
+              <div>• Mihomo Agent: <span style="color: #409EFF; font-weight: 600;">8080</span></div>
+              <div>• MosDNS Agent: <span style="color: #67C23A; font-weight: 600;">8081</span></div>
+            </template>
           </div>
         </el-form-item>
 
@@ -350,28 +357,12 @@
         </el-form-item>
 
         <!-- Docker 特有字段 -->
-        <template v-if="scriptForm.installType === 'docker' || scriptForm.installType === 'docker-mihomo' || scriptForm.installType === 'docker-mosdns' || scriptForm.installType === 'docker-aio'">
-          <el-alert
-            type="warning"
-            :closable="false"
-            style="margin-bottom: 16px;"
-            v-if="scriptForm.installType === 'docker'"
-          >
-            <template #title>
-              <div style="line-height: 1.6; font-size: 13px;">
-                <strong>Docker Agent 使用说明：</strong><br/>
-                • Docker Agent 只能管理通过 Docker 部署的 Mihomo/MosDNS 服务<br/>
-                • 需要指定服务容器名称才能实现重启功能<br/>
-                • Agent 容器需要挂载 Docker socket 才能控制其他容器
-              </div>
-            </template>
-          </el-alert>
-
+        <template v-if="scriptForm.installType === 'docker'">
           <el-alert
             type="success"
             :closable="false"
             style="margin-bottom: 16px;"
-            v-if="scriptForm.installType === 'docker-mihomo'"
+            v-if="scriptForm.dockerMode === 'mihomo'"
           >
             <template #title>
               <div style="line-height: 1.6; font-size: 13px;">
@@ -388,7 +379,7 @@
             type="success"
             :closable="false"
             style="margin-bottom: 16px;"
-            v-if="scriptForm.installType === 'docker-mosdns'"
+            v-if="scriptForm.dockerMode === 'mosdns'"
           >
             <template #title>
               <div style="line-height: 1.6; font-size: 13px;">
@@ -405,15 +396,15 @@
             type="success"
             :closable="false"
             style="margin-bottom: 16px;"
-            v-if="scriptForm.installType === 'docker-aio'"
+            v-if="scriptForm.dockerMode === 'aio'"
           >
             <template #title>
               <div style="line-height: 1.6; font-size: 13px;">
                 <strong>Docker All-in-One Agent 使用说明：</strong><br/>
-                • 该镜像内置了 Mihomo 和 mosdns，可同时运行多个服务<br/>
-                • Mihomo Agent (端口 8080) + mosdns Agent (端口 8081)<br/>
+                • 该镜像内置了 Mihomo 和 Mosdns，可同时运行多个服务<br/>
+                • Mihomo Agent (端口 8080) + Mosdns Agent (端口 8081)<br/>
                 • 支持通过环境变量启用/禁用任一服务<br/>
-                • 适合需要同时部署 Mihomo 和 mosdns 的场景
+                • 适合需要同时部署 Mihomo 和 Mosdns 的场景
               </div>
             </template>
           </el-alert>
@@ -438,18 +429,6 @@
             </el-input>
           </el-form-item>
 
-          <el-form-item label="服务容器名" v-if="scriptForm.installType === 'docker'">
-            <el-input v-model="scriptForm.serviceContainerName" placeholder="mihomo">
-              <template #append>
-                <el-tooltip content="要管理的 Mihomo/MosDNS 服务的容器名称，用于重启功能" placement="top">
-                  <el-icon><QuestionFilled /></el-icon>
-                </el-tooltip>
-              </template>
-            </el-input>
-            <div style="margin-top: 8px; color: #909399; font-size: 12px">
-              填写后 Agent 可以通过 Docker 重启该服务容器
-            </div>
-          </el-form-item>
 
           <el-form-item label="网络模式">
             <el-radio-group v-model="scriptForm.networkMode">
@@ -494,25 +473,18 @@
           type="info"
           :closable="false"
           style="margin-bottom: 16px;"
-          v-if="scriptForm.installType === 'docker' || scriptForm.installType === 'docker-mihomo' || scriptForm.installType === 'docker-mosdns' || scriptForm.installType === 'docker-aio'"
+          v-if="scriptForm.installType === 'docker'"
         >
           <template #title>
             <div style="line-height: 1.6;">
-              <template v-if="scriptForm.installType === 'docker'">
-                使用 Docker Compose 快速部署 Agent<br/>
-                <span style="font-size: 12px; color: #409EFF;">
-                  ✓ 轻量级容器化部署，隔离性好<br/>
-                  ✓ 支持自动重启和健康检查
-                </span>
-              </template>
-              <template v-else-if="scriptForm.installType === 'docker-mihomo'">
+              <template v-if="scriptForm.dockerMode === 'mihomo'">
                 使用 Docker 快速部署 Mihomo Agent<br/>
                 <span style="font-size: 12px; color: #409EFF;">
                   ✓ 内置 Mihomo，一个容器运行 Agent+Mihomo<br/>
                   ✓ 支持自动配置拉取、更新和服务重启
                 </span>
               </template>
-              <template v-else-if="scriptForm.installType === 'docker-mosdns'">
+              <template v-else-if="scriptForm.dockerMode === 'mosdns'">
                 使用 Docker 快速部署 mosdns Agent<br/>
                 <span style="font-size: 12px; color: #409EFF;">
                   ✓ 内置 mosdns，一个容器运行 Agent+mosdns<br/>
@@ -586,7 +558,7 @@
         </template>
 
         <!-- Docker Compose 内容 -->
-        <template v-if="scriptForm.installType === 'docker' || scriptForm.installType === 'docker-mihomo' || scriptForm.installType === 'docker-mosdns' || scriptForm.installType === 'docker-aio'">
+        <template v-if="scriptForm.installType === 'docker'">
           <!-- Docker Run 命令 -->
           <div class="command-section">
             <div class="command-label">
@@ -657,17 +629,12 @@
                 3. 查看日志: <code style="background: #f5f7fa; padding: 2px 6px; border-radius: 3px;">docker-compose logs -f</code><br/>
                 <br/>
                 <strong style="color: #E6A23C;">重要提示：</strong><br/>
-                <template v-if="scriptForm.installType === 'docker'">
-                  • 如果配置了服务容器名称，Agent 将能够通过 Docker 重启该服务<br/>
-                  • 确保服务容器与 Agent 在同一 Docker 网络或主机上<br/>
-                  • Agent 需要访问 Docker socket 才能控制其他容器
-                </template>
-                <template v-else-if="scriptForm.installType === 'docker-mihomo'">
+                <template v-if="scriptForm.dockerMode === 'mihomo'">
                   • 该镜像内置了 Mihomo，Agent 和 Mihomo 在同一容器中运行<br/>
                   • 会自动创建 ./mihomo 目录存储配置文件<br/>
                   • 代理端口：7890 (HTTP)、7891 (SOCKS5)、9090 (API)
                 </template>
-                <template v-else-if="scriptForm.installType === 'docker-mosdns'">
+                <template v-else-if="scriptForm.dockerMode === 'mosdns'">
                   • 该镜像内置了 mosdns，Agent 和 mosdns 在同一容器中运行<br/>
                   • 会自动创建 ./mosdns 目录存储配置文件<br/>
                   • DNS 端口：53 (TCP/UDP)
@@ -706,7 +673,7 @@
         style="width: 100%;"
       >
         <el-icon><Document /></el-icon>
-        {{ (scriptForm.installType === 'docker' || scriptForm.installType === 'docker-mihomo' || scriptForm.installType === 'docker-mosdns' || scriptForm.installType === 'docker-aio') ? '生成 Docker 部署命令' : '生成安装命令' }}
+        {{ scriptForm.installType === 'docker' ? '生成 Docker 部署命令' : '生成安装命令' }}
       </el-button>
 
       <template #footer>
@@ -934,6 +901,7 @@ const formKey = ref(0) // 用于强制重新渲染表单
 
 const scriptForm = ref({
   installType: 'shell',
+  dockerMode: 'mihomo', // mihomo, mosdns, aio
   name: '',
   type: 'mihomo',
   port: 8080,
@@ -1457,7 +1425,7 @@ const onInstallTypeChange = () => {
   dockerComposeContent.value = ''
   dockerRunCommand.value = ''
 
-  if (scriptForm.value.installType === 'docker' || scriptForm.value.installType === 'docker-mihomo' || scriptForm.value.installType === 'docker-mosdns' || scriptForm.value.installType === 'docker-aio') {
+  if (scriptForm.value.installType === 'docker') {
     // 切换到 Docker 模式时，确保有默认值
     if (!scriptForm.value.containerName) {
       scriptForm.value.containerName = 'configflow-agent'
@@ -1466,26 +1434,27 @@ const onInstallTypeChange = () => {
       scriptForm.value.networkMode = 'bridge'
     }
 
-    // docker-mihomo 模式强制使用 mihomo 类型
-    if (scriptForm.value.installType === 'docker-mihomo') {
-      scriptForm.value.type = 'mihomo'
-      // docker-mihomo 不需要服务容器名（Mihomo 在同一容器内）
-      scriptForm.value.serviceContainerName = ''
-    } else if (scriptForm.value.installType === 'docker-mosdns') {
-      // docker-mosdns 模式强制使用 mosdns 类型
-      scriptForm.value.type = 'mosdns'
-      // docker-mosdns 不需要服务容器名（mosdns 在同一容器内）
-      scriptForm.value.serviceContainerName = ''
-    } else if (scriptForm.value.installType === 'docker-aio') {
-      // docker-aio 模式不需要选择服务类型（同时支持两种服务）
-      scriptForm.value.type = 'mihomo'  // 默认设置为 mihomo，但实际不使用
-      scriptForm.value.serviceContainerName = ''
-    } else {
-      // 根据服务类型设置默认的服务容器名称
-      if (!scriptForm.value.serviceContainerName) {
-        scriptForm.value.serviceContainerName = scriptForm.value.type
-      }
-    }
+    // 触发 docker mode change 以设置正确的默认值
+    onDockerModeChange()
+  }
+}
+
+// Docker 模式变化时
+const onDockerModeChange = () => {
+  installCommand.value = ''
+  installCommandAlpine.value = ''
+  dockerComposeContent.value = ''
+  dockerRunCommand.value = ''
+
+  if (scriptForm.value.dockerMode === 'mihomo') {
+    // mihomo 模式
+    scriptForm.value.type = 'mihomo'
+  } else if (scriptForm.value.dockerMode === 'mosdns') {
+    // mosdns 模式
+    scriptForm.value.type = 'mosdns'
+  } else {
+    // aio 模式
+    scriptForm.value.type = 'mihomo'
   }
 }
 
@@ -1525,6 +1494,7 @@ const showGenerateScriptDialog = () => {
   // 重置表单值
   scriptForm.value = {
     installType: 'shell',
+    dockerMode: 'mihomo',
     name: '',
     type: 'mihomo',
     port: generateRandomPort(),
@@ -1572,79 +1542,36 @@ const generateScript = async () => {
 
   const loading = ElLoading.service({
     lock: true,
-    text: (scriptForm.value.installType === 'docker' || scriptForm.value.installType === 'docker-mihomo' || scriptForm.value.installType === 'docker-mosdns' || scriptForm.value.installType === 'docker-aio') ? '正在生成 Docker 部署命令...' : '正在生成安装命令...',
+    text: scriptForm.value.installType === 'docker' ? '正在生成 Docker 部署命令...' : '正在生成安装命令...',
     background: 'rgba(0, 0, 0, 0.7)'
   })
 
   try {
     console.log('开始生成脚本，参数：', scriptForm.value)
 
-    if (scriptForm.value.installType === 'docker' || scriptForm.value.installType === 'docker-mihomo' || scriptForm.value.installType === 'docker-mosdns' || scriptForm.value.installType === 'docker-aio') {
+    if (scriptForm.value.installType === 'docker') {
       // 生成 Docker Compose 和 Docker Run
       const serverUrl = localStorage.getItem('serverDomain') || window.location.origin
 
-      // 根据安装类型选择不同的 API 和参数
-      let composeResponse, runResponse
-      if (scriptForm.value.installType === 'docker-mihomo') {
-        // 使用 Docker Mihomo 专用 API
-        // agent_name 使用 containerName（Docker 容器名称），而不是 name（Agent 显示名称）
-        const dockerParams = {
-          server_url: serverUrl,
-          agent_name: scriptForm.value.containerName || scriptForm.value.name,
-          agent_ip: scriptForm.value.agent_ip || '',
-          data_dir: './mihomo_data',
-          network_mode: scriptForm.value.networkMode
-        }
-        ;[composeResponse, runResponse] = await Promise.all([
-          api.get('/agents/docker-mihomo-compose', { params: dockerParams }),
-          api.get('/agents/docker-mihomo-run', { params: dockerParams })
-        ])
-      } else if (scriptForm.value.installType === 'docker-mosdns') {
-        // 使用 Docker mosdns 专用 API
-        // agent_name 使用 containerName（Docker 容器名称），而不是 name（Agent 显示名称）
-        const dockerParams = {
-          server_url: serverUrl,
-          agent_name: scriptForm.value.containerName || scriptForm.value.name,
-          agent_ip: scriptForm.value.agent_ip || '',
-          data_dir: './mosdns_data',
-          network_mode: scriptForm.value.networkMode
-        }
-        ;[composeResponse, runResponse] = await Promise.all([
-          api.get('/agents/docker-mosdns-compose', { params: dockerParams }),
-          api.get('/agents/docker-mosdns-run', { params: dockerParams })
-        ])
-      } else if (scriptForm.value.installType === 'docker-aio') {
-        // 使用 Docker AIO 专用 API
-        // agent_name 使用 containerName（Docker 容器名称），而不是 name（Agent 显示名称）
-        const dockerParams = {
-          server_url: serverUrl,
-          agent_name: scriptForm.value.containerName || scriptForm.value.name,
-          agent_ip: scriptForm.value.agent_ip || '',
-          data_dir: './aio_data',
-          network_mode: scriptForm.value.networkMode
-        }
-        ;[composeResponse, runResponse] = await Promise.all([
-          api.get('/agents/docker-aio-compose', { params: dockerParams }),
-          api.get('/agents/docker-aio-run', { params: dockerParams })
-        ])
-      } else {
-        // 使用原来的通用 Docker API
-        const dockerParams = {
-          name: scriptForm.value.name,
-          type: scriptForm.value.type,
-          port: scriptForm.value.port,
-          agent_ip: scriptForm.value.agent_ip || '',
-          docker_image: scriptForm.value.dockerImage || '',
-          container_name: scriptForm.value.containerName,
-          service_container_name: scriptForm.value.serviceContainerName || '',
-          network_mode: scriptForm.value.networkMode,
-          server_url: serverUrl
-        }
-        ;[composeResponse, runResponse] = await Promise.all([
-          agentApi.generateDockerCompose(dockerParams),
-          agentApi.generateDockerRun(dockerParams)
-        ])
+      const dockerParams = {
+        server_url: serverUrl,
+        agent_name: scriptForm.value.containerName || scriptForm.value.name,
+        agent_ip: scriptForm.value.agent_ip || '',
+        network_mode: scriptForm.value.networkMode,
+        enable_mihomo: scriptForm.value.dockerMode === 'mihomo' || scriptForm.value.dockerMode === 'aio',
+        enable_mosdns: scriptForm.value.dockerMode === 'mosdns' || scriptForm.value.dockerMode === 'aio',
+        mihomo_port: 8080,
+        mosdns_port: 8081,
+        // 根据模式设置数据目录
+        data_dir: scriptForm.value.dockerMode === 'aio' ? './aio_data' :
+                  (scriptForm.value.dockerMode === 'mosdns' ? './mosdns_data' : './mihomo_data')
       }
+
+      // 使用统一的 Docker API
+      const [composeResponse, runResponse] = await Promise.all([
+        api.get('/agents/docker-agent-compose', { params: dockerParams }),
+        api.get('/agents/docker-agent-run', { params: dockerParams })
+      ])
 
       dockerComposeContent.value = composeResponse.data
       dockerRunCommand.value = runResponse.data

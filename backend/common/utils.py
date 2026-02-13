@@ -26,3 +26,8 @@ def generate_random_token(length: int = 32) -> str:
     # 使用字母和数字
     alphabet = string.ascii_letters + string.digits
     return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+
+def str_to_bool(s) -> bool:
+    """将字符串转换为布尔值"""
+    return str(s).lower() == 'true'
