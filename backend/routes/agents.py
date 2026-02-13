@@ -14,6 +14,7 @@ from backend.routes import agents_bp as bp
 from backend.common.auth import require_auth
 from backend.common.config import config_data, save_config
 from backend.common.agent_manager import get_agent_manager
+from backend.common.utils import str_to_bool
 from backend.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -472,289 +473,53 @@ def update_agent_version(agent_id):
 
 # Docker 相关路由（安装脚本生成）
 
-@bp.route('/docker-mihomo-compose', methods=['GET'])
+@bp.route('/docker-agent-compose', methods=['GET'])
 @require_auth
-def get_docker_mihomo_compose():
-    """生成 Mihomo Docker Compose 配置"""
-    from backend.agents.install_script import generate_docker_mihomo_compose
+def get_docker_agent_compose():
+    """生成 Docker Agent Compose 配置 (统一接口)"""
+    from backend.agents.install_script import generate_docker_agent_compose
 
     try:
         params = {
             'server_url': request.args.get('server_url', ''),
-            'agent_token': request.args.get('agent_token', ''),
-            'agent_name': request.args.get('agent_name', 'mihomo-agent'),
+            'agent_name': request.args.get('agent_name', 'agent'),
             'agent_ip': request.args.get('agent_ip', ''),
-            'data_dir': request.args.get('data_dir', './mihomo_data'),
-            'network_mode': request.args.get('network_mode', 'host')
+            'data_dir': request.args.get('data_dir', './agent_data'),
+            'network_mode': request.args.get('network_mode', 'host'),
+            'enable_mihomo': str_to_bool(request.args.get('enable_mihomo', 'true')),
+            'enable_mosdns': str_to_bool(request.args.get('enable_mosdns', 'false')),
+            'mihomo_port': request.args.get('mihomo_port', 8080, type=int),
+            'mosdns_port': request.args.get('mosdns_port', 8081, type=int)
         }
 
-        script = generate_docker_mihomo_compose(**params)
+        script = generate_docker_agent_compose(**params)
         return script, 200, {'Content-Type': 'text/yaml; charset=utf-8'}
 
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-@bp.route('/docker-mihomo-run', methods=['GET'])
+@bp.route('/docker-agent-run', methods=['GET'])
 @require_auth
-def get_docker_mihomo_run():
-    """生成 Mihomo Docker Run 命令"""
-    from backend.agents.install_script import generate_docker_mihomo_run
+def get_docker_agent_run():
+    """生成 Docker Agent Run 命令 (统一接口)"""
+    from backend.agents.install_script import generate_docker_agent_run
 
     try:
         params = {
             'server_url': request.args.get('server_url', ''),
-            'agent_token': request.args.get('agent_token', ''),
-            'agent_name': request.args.get('agent_name', 'mihomo-agent'),
+            'agent_name': request.args.get('agent_name', 'agent'),
             'agent_ip': request.args.get('agent_ip', ''),
-            'data_dir': request.args.get('data_dir', './mihomo_data'),
-            'network_mode': request.args.get('network_mode', 'host')
+            'data_dir': request.args.get('data_dir', './agent_data'),
+            'network_mode': request.args.get('network_mode', 'host'),
+            'enable_mihomo': str_to_bool(request.args.get('enable_mihomo', 'true')),
+            'enable_mosdns': str_to_bool(request.args.get('enable_mosdns', 'false')),
+            'mihomo_port': request.args.get('mihomo_port', 8080, type=int),
+            'mosdns_port': request.args.get('mosdns_port', 8081, type=int)
         }
 
-        script = generate_docker_mihomo_run(**params)
+        script = generate_docker_agent_run(**params)
         return script, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@bp.route('/docker-mosdns-compose', methods=['GET'])
-@require_auth
-def get_docker_mosdns_compose():
-    """生成 MosDNS Docker Compose 配置"""
-    from backend.agents.install_script import generate_docker_mosdns_compose
-
-    try:
-        params = {
-            'server_url': request.args.get('server_url', ''),
-            'agent_token': request.args.get('agent_token', ''),
-            'agent_name': request.args.get('agent_name', 'mosdns-agent'),
-            'agent_ip': request.args.get('agent_ip', ''),
-            'data_dir': request.args.get('data_dir', './mosdns_data'),
-            'network_mode': request.args.get('network_mode', 'host')
-        }
-
-        script = generate_docker_mosdns_compose(**params)
-        return script, 200, {'Content-Type': 'text/yaml; charset=utf-8'}
-
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@bp.route('/docker-mosdns-run', methods=['GET'])
-@require_auth
-def get_docker_mosdns_run():
-    """生成 MosDNS Docker Run 命令"""
-    from backend.agents.install_script import generate_docker_mosdns_run
-
-    try:
-        params = {
-            'server_url': request.args.get('server_url', ''),
-            'agent_token': request.args.get('agent_token', ''),
-            'agent_name': request.args.get('agent_name', 'mosdns-agent'),
-            'agent_ip': request.args.get('agent_ip', ''),
-            'data_dir': request.args.get('data_dir', './mosdns_data'),
-            'network_mode': request.args.get('network_mode', 'host')
-        }
-
-        script = generate_docker_mosdns_run(**params)
-        return script, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@bp.route('/docker-aio-compose', methods=['GET'])
-@require_auth
-def get_docker_aio_compose():
-    """生成 All-in-One Docker Compose 配置（Mihomo + MosDNS）"""
-    from backend.agents.install_script import generate_docker_aio_compose
-
-    try:
-        params = {
-            'server_url': request.args.get('server_url', ''),
-            'agent_token': request.args.get('agent_token', ''),
-            'agent_name': request.args.get('agent_name', 'aio-agent'),
-            'agent_ip': request.args.get('agent_ip', ''),
-            'data_dir': request.args.get('data_dir', './aio_data'),
-            'network_mode': request.args.get('network_mode', 'host')
-        }
-
-        script = generate_docker_aio_compose(**params)
-        return script, 200, {'Content-Type': 'text/yaml; charset=utf-8'}
-
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@bp.route('/docker-aio-run', methods=['GET'])
-@require_auth
-def get_docker_aio_run():
-    """生成 All-in-One Docker Run 命令（Mihomo + MosDNS）"""
-    from backend.agents.install_script import generate_docker_aio_run
-
-    try:
-        params = {
-            'server_url': request.args.get('server_url', ''),
-            'agent_token': request.args.get('agent_token', ''),
-            'agent_name': request.args.get('agent_name', 'aio-agent'),
-            'agent_ip': request.args.get('agent_ip', ''),
-            'data_dir': request.args.get('data_dir', './aio_data'),
-            'network_mode': request.args.get('network_mode', 'host')
-        }
-
-        script = generate_docker_aio_run(**params)
-        return script, 200, {'Content-Type': 'text/plain; charset=utf-8'}
-
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@bp.route('/docker-compose', methods=['GET'])
-@require_auth
-def get_docker_compose():
-    """生成通用 Docker Compose 配置（Agent 容器）"""
-    try:
-        # 获取参数
-        name = request.args.get('name', 'configflow-agent')
-        service_type = request.args.get('type', 'mihomo')
-        port = request.args.get('port', '8080')
-        agent_ip = request.args.get('agent_ip', '')
-        docker_image = request.args.get('docker_image', '')
-        container_name = request.args.get('container_name', 'configflow-agent')
-        service_container_name = request.args.get('service_container_name', service_type)
-        network_mode = request.args.get('network_mode', 'bridge')
-        server_url = request.args.get('server_url', '')
-
-        # 使用默认镜像如果未指定
-        if not docker_image:
-            docker_image = 'thsrite/config-flow-agent:latest'
-
-        # 根据服务类型设置默认配置路径和重启命令
-        if service_type == 'mihomo':
-            config_path = '/etc/mihomo/config.yaml'
-            restart_command = 'systemctl restart mihomo'
-        elif service_type == 'mosdns':
-            config_path = '/etc/mosdns/config.yaml'
-            restart_command = 'systemctl restart mosdns'
-        else:
-            config_path = f'/etc/{service_type}/config.yaml'
-            restart_command = f'systemctl restart {service_type}'
-
-        # 生成 Docker Compose 配置
-        compose_template = """version: '3.8'
-
-services:
-  agent:
-    image: {docker_image}
-    container_name: {container_name}
-    restart: unless-stopped
-    network_mode: {network_mode}
-    ports:
-      - "{port}:{port}"
-    environment:
-      - SERVER_URL={server_url}
-      - AGENT_NAME={name}
-      - SERVICE_TYPE={service_type}
-      - CONFIG_PATH={config_path}
-      - RESTART_COMMAND={restart_command}
-      - SERVICE_CONTAINER_NAME={service_container_name}
-      - AGENT_PORT={port}
-{agent_ip_env}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-"""
-
-        # 如果指定了 agent_ip，添加到环境变量
-        agent_ip_env = f"      - AGENT_IP={agent_ip}" if agent_ip else ""
-
-        compose_content = compose_template.format(
-            docker_image=docker_image,
-            container_name=container_name,
-            network_mode=network_mode,
-            port=port,
-            server_url=server_url,
-            name=name,
-            service_type=service_type,
-            config_path=config_path,
-            restart_command=restart_command,
-            service_container_name=service_container_name,
-            agent_ip_env=agent_ip_env
-        )
-
-        return compose_content, 200, {'Content-Type': 'text/yaml; charset=utf-8'}
-
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-
-@bp.route('/docker-run', methods=['GET'])
-@require_auth
-def get_docker_run():
-    """生成通用 Docker Run 命令（Agent 容器）"""
-    try:
-        # 获取参数
-        name = request.args.get('name', 'configflow-agent')
-        service_type = request.args.get('type', 'mihomo')
-        port = request.args.get('port', '8080')
-        agent_ip = request.args.get('agent_ip', '')
-        docker_image = request.args.get('docker_image', '')
-        container_name = request.args.get('container_name', 'configflow-agent')
-        service_container_name = request.args.get('service_container_name', service_type)
-        network_mode = request.args.get('network_mode', 'bridge')
-        server_url = request.args.get('server_url', '')
-
-        # 使用默认镜像如果未指定
-        if not docker_image:
-            docker_image = 'thsrite/config-flow-agent:latest'
-
-        # 根据服务类型设置默认配置路径和重启命令
-        if service_type == 'mihomo':
-            config_path = '/etc/mihomo/config.yaml'
-            restart_command = 'systemctl restart mihomo'
-        elif service_type == 'mosdns':
-            config_path = '/etc/mosdns/config.yaml'
-            restart_command = 'systemctl restart mosdns'
-        else:
-            config_path = f'/etc/{service_type}/config.yaml'
-            restart_command = f'systemctl restart {service_type}'
-
-        # 构建环境变量
-        env_vars = [
-            f'-e SERVER_URL="{server_url}"',
-            f'-e AGENT_NAME="{name}"',
-            f'-e SERVICE_TYPE="{service_type}"',
-            f'-e CONFIG_PATH="{config_path}"',
-            f'-e RESTART_COMMAND="{restart_command}"',
-            f'-e SERVICE_CONTAINER_NAME="{service_container_name}"',
-            f'-e AGENT_PORT="{port}"'
-        ]
-
-        if agent_ip:
-            env_vars.append(f'-e AGENT_IP="{agent_ip}"')
-
-        # 构建环境变量字符串（先构建，避免在f-string中使用反斜杠）
-        backslash = ' \\'
-        env_vars_str = backslash.join([f'\n  {env}' for env in env_vars])
-
-        # 生成 Docker Run 命令
-        run_command = f"""docker run -d \\
-  --name {container_name} \\
-  --restart unless-stopped \\
-  --network {network_mode} \\
-  -p {port}:{port} {env_vars_str} \\
-  -v /var/run/docker.sock:/var/run/docker.sock \\
-  --log-driver json-file \\
-  --log-opt max-size=10m \\
-  --log-opt max-file=3 \\
-  {docker_image}"""
-
-        return run_command, 200, {'Content-Type': 'text/plain; charset=utf-8'}
 
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
