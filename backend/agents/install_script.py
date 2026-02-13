@@ -142,9 +142,6 @@ def generate_docker_agent_compose(
         volumes.append(f"{data_dir}/mihomo:/root/.config/mihomo")
     if enable_mosdns:
         volumes.append(f"{data_dir}/mosdns:/etc/mosdns")
-    
-    # 总是添加 docker socket
-    volumes.append("/var/run/docker.sock:/var/run/docker.sock")
 
     # 构建服务配置
     service_config = {
@@ -290,9 +287,7 @@ docker run -d \\
 
     if volumes_args:
         cmd += f"\n  {volumes_args}"
-        
     cmd += """
-  -v /var/run/docker.sock:/var/run/docker.sock \\
   thsrite/config-flow-agent:latest
 """
     return cmd
