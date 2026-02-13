@@ -307,17 +307,15 @@
         </el-form-item>
 
         <el-form-item label="Agent 端口" v-else>
-          <div style="color: #909399; font-size: 14px; line-height: 1.8;">
-            <template v-if="scriptForm.dockerMode === 'mihomo'">
-              <div>• Mihomo Agent: <span style="color: #409EFF; font-weight: 600;">8080</span></div>
-            </template>
-            <template v-else-if="scriptForm.dockerMode === 'mosdns'">
-              <div>• MosDNS Agent: <span style="color: #67C23A; font-weight: 600;">8081</span></div>
-            </template>
-            <template v-else>
-              <div>• Mihomo Agent: <span style="color: #409EFF; font-weight: 600;">8080</span></div>
-              <div>• MosDNS Agent: <span style="color: #67C23A; font-weight: 600;">8081</span></div>
-            </template>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div v-if="scriptForm.dockerMode === 'mihomo' || scriptForm.dockerMode === 'aio'" style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #909399; font-size: 14px; min-width: 120px;">• Mihomo Agent:</span>
+              <el-input-number v-model="scriptForm.mihomoAgentPort" :min="1024" :max="65535" size="small" style="width: 140px;" />
+            </div>
+            <div v-if="scriptForm.dockerMode === 'mosdns' || scriptForm.dockerMode === 'aio'" style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: #909399; font-size: 14px; min-width: 120px;">• MosDNS Agent:</span>
+              <el-input-number v-model="scriptForm.mosdnsAgentPort" :min="1024" :max="65535" size="small" style="width: 140px;" />
+            </div>
           </div>
         </el-form-item>
 
@@ -444,7 +442,8 @@
               host 模式可直接访问主机网络，bridge 模式需要端口映射
             </div>
           </el-form-item>
-        </template>
+
+          </template>
       </el-form>
 
       <el-divider content-position="left">
@@ -911,7 +910,10 @@ const scriptForm = ref({
   dockerImage: '',
   containerName: 'configflow-agent',
   serviceContainerName: '',
-  networkMode: 'bridge'
+  networkMode: 'bridge',
+  // Docker Agent 端口配置
+  mihomoAgentPort: 8080,
+  mosdnsAgentPort: 8081
 })
 
 // 服务类型选项
@@ -1560,8 +1562,8 @@ const generateScript = async () => {
         network_mode: scriptForm.value.networkMode,
         enable_mihomo: scriptForm.value.dockerMode === 'mihomo' || scriptForm.value.dockerMode === 'aio',
         enable_mosdns: scriptForm.value.dockerMode === 'mosdns' || scriptForm.value.dockerMode === 'aio',
-        mihomo_port: 8080,
-        mosdns_port: 8081,
+        mihomo_port: scriptForm.value.mihomoAgentPort,
+        mosdns_port: scriptForm.value.mosdnsAgentPort,
         // 根据模式设置数据目录
         data_dir: scriptForm.value.dockerMode === 'aio' ? './aio_data' :
                   (scriptForm.value.dockerMode === 'mosdns' ? './mosdns_data' : './mihomo_data')
