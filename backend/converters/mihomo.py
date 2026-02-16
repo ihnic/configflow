@@ -29,7 +29,10 @@ def apply_github_proxy_domain(url: str, config_data: Dict[str, Any]) -> str:
     if not url:
         return url
 
-    # 获取代理配置
+    # 获取代理配置（添加空值检查）
+    if not config_data:
+        return url
+
     proxy_url = config_data.get('system_config', {}).get('github_proxy_domain', '').strip()
     if not proxy_url:
         return url
